@@ -204,6 +204,16 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 		newBuffer->BaseAddress, newBuffer->BufferSize, newBuffer->Width, newBuffer->Height, newBuffer->PixelsPerScanline
 	);
 
+	EFI_MEMORY_DESCRIPTOR* Map = NULL;
+	UINTN MapSize, MapKep; 
+	UINTN DescriptorSize;
+	UINTN32 DescriptorVersion;
+	{
+		SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+		SystemTable->BootServices->AllocatePool(EfiLoaderData, MapSize, (void**)&Map);
+		SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+	}
+
 	KernelStart(newBuffer, newFont);
 
 	return EFI_SUCCESS; // Exit the UEFI application
