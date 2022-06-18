@@ -8,3 +8,7 @@ double power(double base, int exponent) {
     for (int i = 0; i < exponent; i++) acc *= base;
     return acc;
 }
+
+int floor(double n) { return (int)n; }
+
+int ciel(double n) { return (int)n == n ? (int)n : (int)n + 1; }
