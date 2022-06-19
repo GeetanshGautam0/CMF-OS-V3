@@ -122,6 +122,9 @@ const char* to_string(double value) { return to_string(value, 5); }
 const char* to_string(float value)  { return to_string(value, 5); }
 
 
+const char* to_string(bool value) {return value ? "true" : "false"; }
+
+
 char hexToStringOutput[128];
 const char* to_hstring(uint64_t value) {
     uint64_t* valPtr = &value;
