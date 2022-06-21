@@ -3,7 +3,12 @@
 
 bool authorized(Region region, unsigned int x, unsigned int y) {
     // return (region.x_start <= x <= region.x_end && region.y_start <= y <= region.y_end);
-    return (region.x_start <= x && x <= region.x_end && region.y_start <= y && y <= region.y_end);
+    return (
+           region.x_start <= x 
+        && region.y_start <= y 
+        && x <= region.x_end 
+        && y <= region.y_end
+    );
 }
 
 
@@ -53,7 +58,10 @@ void _putChar(FrameBuffer* frameBuffer, PSF1_FONT* font, char chr, unsigned int 
 }
 
 
-void BasicRenderer::printString(const char* string, unsigned int color, unsigned int background) {
+void BasicRenderer::printString(const char* string, Color color, Color background) {
+    unsigned long color_int = createRGBA(color);
+    unsigned long background_int = createRGBA(background);
+
     if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
 
     if (CursorPosition.x + font->font_size.w > RendererBounds.x_end) {
@@ -71,7 +79,7 @@ void BasicRenderer::printString(const char* string, unsigned int color, unsigned
 
     char* chr = (char*)string;
     while (*chr != 0) {
-        _putChar(frameBuffer, font, *chr, CursorPosition.x, CursorPosition.y, color, background);
+        _putChar(frameBuffer, font, *chr, CursorPosition.x, CursorPosition.y, color_int, background_int);
         CursorPosition.x += font->font_size.w;
         
         if (CursorPosition.x + font->font_size.w > RendererBounds.x_end) {
@@ -92,7 +100,10 @@ void BasicRenderer::printString(const char* string, unsigned int color, unsigned
 }
 
 
-void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, unsigned int color, unsigned int background) {
+void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, Color color, Color background) {
+    unsigned long color_int = createRGBA(color);
+    unsigned long background_int = createRGBA(background);
+    
     if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
     if (!(authorized(RendererBounds, xOff, yOff) && authorized(RendererBounds, xOff + font->font_size.w, yOff + font->font_size.h))) return;
 
@@ -101,9 +112,9 @@ void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, unsi
     for (unsigned long y = yOff; y < yOff + font->psf1_Header->charsize; y++) {
         for (unsigned long x = xOff; x < xOff + font->font_size.w; x++) {
             if ( (*fontPtr & (0b10000000 >> (x - xOff))) > 0 ) {
-                *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color;
+                *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color_int;
             } else {
-                *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = background;
+                *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = background_int;
             }
         }   
         fontPtr ++; 
@@ -123,14 +134,21 @@ void _clearRegion(FrameBuffer* frameBuffer, Region rb, Region region, unsigned i
 }
 
 
-void BasicRenderer::clearRegion(Region region, unsigned int color) { _clearRegion(frameBuffer, RendererBounds, region, color); }
-void BasicRenderer::clearScreen(unsigned int color) { _clearRegion(frameBuffer, RendererBounds, RendererBounds, color); }
+void BasicRenderer::clearRegion(Region region, Color color) {
+    unsigned long color_int = createRGBA(color);
+    _clearRegion(frameBuffer, RendererBounds, region, color_int); 
+}
+void BasicRenderer::clearScreen(Color color) {
+    unsigned long color_int = createRGBA(color);
+    _clearRegion(frameBuffer, RendererBounds, RendererBounds, color_int); 
+}
 
 
 // Shape Renderers (private)
 
 
-void _drawHLine(FrameBuffer* fb, Region rBounds, unsigned int x_start, unsigned int x_end, unsigned int y, unsigned int color) {
+void _drawHLine(FrameBuffer* fb, Region rBounds, unsigned int x_start, unsigned int x_end, unsigned int y, unsigned int color, unsigned int stroke) {
+    --stroke; 
      unsigned int* pixPtr = (unsigned int*)fb->BaseAddress;
      for (unsigned int x = x_start; x <= x_end; x++) {
         if (authorized(rBounds, x, y)) {
@@ -139,7 +157,8 @@ void _drawHLine(FrameBuffer* fb, Region rBounds, unsigned int x_start, unsigned 
      }
 }
 
-void _drawVLine(FrameBuffer* fb, Region rBounds, unsigned int y_start, unsigned int y_end, unsigned int x, unsigned int color) {
+void _drawVLine(FrameBuffer* fb, Region rBounds, unsigned int y_start, unsigned int y_end, unsigned int x, unsigned int color, unsigned int stroke) {
+    --stroke; 
      unsigned int* pixPtr = (unsigned int*)fb->BaseAddress;
      for (unsigned int y = y_start; y <= y_end; y++) {
         if (authorized(rBounds, x, y)) {
@@ -148,46 +167,57 @@ void _drawVLine(FrameBuffer* fb, Region rBounds, unsigned int y_start, unsigned 
      }
 }
 
-void _drawHRect(FrameBuffer* fb, Region rb, Region region, unsigned int color) {
+void _drawHRect(FrameBuffer* fb, Region rb, Geometry geo, unsigned int color) {
+    if (geo.stroke_width <= 0) return;
+
     unsigned int* pixPtr = (unsigned int*)fb->BaseAddress;
-        for (unsigned int x = region.x_start; x <= region.x_end; x++) {
-            if (authorized(rb, x, region.y_start)) {
-                *(unsigned int*)(pixPtr + x + (region.y_start * fb->PixelsPerScanline)) = color;
+        for (unsigned int x = geo.region.x_start; x <= geo.region.x_end; x++) {
+            if (authorized(rb, x, geo.region.y_start)) {
+                *(unsigned int*)(pixPtr + x + (geo.region.y_start * fb->PixelsPerScanline)) = color;
             }
-            if (authorized(rb, x, region.y_end)) {
-                *(unsigned int*)(pixPtr + x + (region.y_end * fb->PixelsPerScanline)) = color;
+            if (authorized(rb, x, geo.region.y_end)) {
+                *(unsigned int*)(pixPtr + x + (geo.region.y_end * fb->PixelsPerScanline)) = color;
             }
         }
-        for (unsigned int y = region.y_start; y <= region.y_end; y++) {
+        for (unsigned int y = geo.region.y_start; y <= geo.region.y_end; y++) {
 
-            if (authorized(rb, region.x_start, y)) {
-                *(unsigned int*)(pixPtr + region.x_start + (y * fb->PixelsPerScanline)) = color;
+            if (authorized(rb, geo.region.x_start, y)) {
+                *(unsigned int*)(pixPtr + geo.region.x_start + (y * fb->PixelsPerScanline)) = color;
             }
-            if (authorized(rb, region.x_end, y)) {
-                *(unsigned int*)(pixPtr + region.x_end + (y * fb->PixelsPerScanline)) = color;
+            if (authorized(rb, geo.region.x_end, y)) {
+                *(unsigned int*)(pixPtr + geo.region.x_end + (y * fb->PixelsPerScanline)) = color;
             }
         }
 }
 
 
-void _drawFRect(FrameBuffer* fb, Region rb, Region region, unsigned int color, unsigned int fill_color) {
-    _clearRegion(fb, rb, region, fill_color);
-    _drawHRect(fb, rb, region, color);
+void _drawFRect(FrameBuffer* fb, Region rb, Geometry geo, unsigned int color, unsigned int fill_color) {
+    _clearRegion(fb, rb, geo.region, fill_color);
+    if (geo.stroke_width > 0) _drawHRect(fb, rb, geo, color);
 }
 
 
 // Shape Renderers (public)
+void BasicRenderer::drawHShape(Geometry geometry, Color color) {
+    unsigned long color_int = createRGBA(color);
 
-
-void BasicRenderer::drawHShape(Geometry geometry, unsigned int color) {
-    if (geometry.shape == RECT) _drawHRect(frameBuffer, RendererBounds, geometry.region, color);
-    else if (geometry.shape == HORIZ_LINE) _drawHLine(frameBuffer, RendererBounds, geometry.region.x_start, geometry.region.x_end, geometry.region.y_start, color);
-    else if (geometry.shape == VERT_LINE) _drawVLine(frameBuffer, RendererBounds, geometry.region.y_start, geometry.region.y_end, geometry.region.x_start, color);
+    if (geometry.shape == RECT) 
+        _drawHRect(frameBuffer, RendererBounds, geometry, color_int);
+    else if (geometry.shape == HORIZ_LINE) 
+        _drawHLine(frameBuffer, RendererBounds, geometry.region.x_start, geometry.region.x_end, geometry.region.y_start, color_int, geometry.stroke_width);
+    else if (geometry.shape == VERT_LINE) 
+        _drawVLine(frameBuffer, RendererBounds, geometry.region.y_start, geometry.region.y_end, geometry.region.x_start, color_int, geometry.stroke_width);
 }
 
 
-void BasicRenderer::drawFShape(Geometry geometry, unsigned int color, unsigned int fill_color) {
-    if (geometry.shape == RECT) _drawFRect(frameBuffer, RendererBounds, geometry.region, color, fill_color);
-    else if (geometry.shape == HORIZ_LINE) _drawHLine(frameBuffer, RendererBounds, geometry.region.x_start, geometry.region.x_end, geometry.region.y_start, color);
-    else if (geometry.shape == VERT_LINE) _drawVLine(frameBuffer, RendererBounds, geometry.region.y_start, geometry.region.y_end, geometry.region.x_start, color);
+void BasicRenderer::drawFShape(Geometry geometry, Color color, Color fill_color) {
+    unsigned long color_int = createRGBA(color);
+    unsigned long fill_color_int = createRGBA(fill_color);
+
+    if (geometry.shape == RECT)
+        _drawFRect(frameBuffer, RendererBounds, geometry, color_int, fill_color_int);
+    else if (geometry.shape == HORIZ_LINE) 
+        _drawHLine(frameBuffer, RendererBounds, geometry.region.x_start, geometry.region.x_end, geometry.region.y_start, color_int, geometry.stroke_width);
+    else if (geometry.shape == VERT_LINE) 
+        _drawVLine(frameBuffer, RendererBounds, geometry.region.y_start, geometry.region.y_end, geometry.region.x_start, color_int, geometry.stroke_width);
 }

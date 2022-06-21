@@ -12,3 +12,8 @@ double power(double base, int exponent) {
 int floor(double n) { return (int)n; }
 
 int ciel(double n) { return (int)n == n ? (int)n : (int)n + 1; }
+
+double clamp(double min, double actual, double max) { 
+    return min <= actual && actual <= max ? actual : (min > actual ? min : max);
+}
+

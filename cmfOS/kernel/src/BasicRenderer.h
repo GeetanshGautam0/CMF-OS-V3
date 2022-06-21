@@ -1,8 +1,5 @@
 #pragma once
-#include "math.h"
-#include "FrameBuffer.h"
-#include "SimpleFont.h"
-#include <stddef.h>
+#include "ktypedef.h"
 
 
 enum Shape { RECT, HORIZ_LINE, VERT_LINE };
@@ -19,7 +16,7 @@ struct Region {
 struct Geometry {
     Shape shape;
     Region region;
-    unsigned int stroke_width = 0;
+    unsigned int stroke_width = 1;
 };
 
 
@@ -32,12 +29,12 @@ class BasicRenderer {
         FrameBuffer* frameBuffer;
         PSF1_FONT* font;
 
-        void printString(const char* string, unsigned int color=0xffffffff, unsigned int background=0x00000000);
-        void putChar(char chr, unsigned int xOff, unsigned int yOff, unsigned int color=0xffffffff, unsigned int background=0x00000000);
-        void clearRegion(Region region, unsigned int color = 0xff000000);
-        void clearScreen(unsigned int color = 0xff000000);
-        void drawHShape(Geometry geometry, unsigned int color = 0xffffffff);
-        void drawFShape(Geometry geometry, unsigned int color = 0xffffffff, unsigned int fill_color = 0xff00ff00);
+        void printString(const char* string, Color color = WHITE, Color background = BLACK);
+        void putChar(char chr, unsigned int xOff, unsigned int yOff, Color color = WHITE, Color background = BLACK);
+        void clearRegion(Region region, Color color = RED);
+        void clearScreen(Color color = BLACK);
+        void drawHShape(Geometry geometry, Color color = WHITE);
+        void drawFShape(Geometry geometry, Color color = WHITE, Color fill_color = BLUE);
 };
 
 
