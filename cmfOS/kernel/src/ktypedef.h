@@ -9,6 +9,7 @@
 #define COLOR_MODE "BRGA"
 
 
+
 struct BootInfo {
 	FrameBuffer* frameBuffer;
 	PSF1_FONT* psf1_font;

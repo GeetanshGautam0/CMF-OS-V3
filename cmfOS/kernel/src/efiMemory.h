@@ -1,6 +1,6 @@
 #pragma once
-#include "ktypedef.h"
 #include "ctypedef.h"
+
 
 struct EFI_MEMORY_DESCRIPTOR {
     uint32_t type;
