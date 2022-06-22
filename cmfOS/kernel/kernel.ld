@@ -3,6 +3,7 @@ ENTRY (_start)
 
 SECTIONS
 {
+    _KernelStart = .;
     .text : ALIGN(0x1000) {
         *(.text)
     }
@@ -15,4 +16,5 @@ SECTIONS
     .bss : ALIGN(0x1000) {
         *(.bss)
     }
+    _KernelEnd = .;
 }
