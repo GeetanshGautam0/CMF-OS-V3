@@ -1,17 +1,6 @@
 #include "BasicRenderer.h"
 
 
-bool authorized(Region region, unsigned int x, unsigned int y) {
-    // return (region.x_start <= x <= region.x_end && region.y_start <= y <= region.y_end);
-    return (
-           region.x_start <= x 
-        && region.y_start <= y 
-        && x <= region.x_end 
-        && y <= region.y_end
-    );
-}
-
-
 bool BasicRenderer::authorized(unsigned int x, unsigned int y) {
     return (
            RendererBounds.x_start <= x 
@@ -121,7 +110,7 @@ void BasicRenderer::printString(const char* string, Color color, Color backgroun
 
 void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, Color color, Color background) {    
     if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
-    if (!(authorized(RendererBounds, xOff, yOff) && authorized(RendererBounds, xOff + font->font_size.w, yOff + font->font_size.h))) return;
+    if (!(authorized(xOff, yOff) && authorized(xOff + font->font_size.w, yOff + font->font_size.h))) return;
 
     _putChar(chr, xOff, yOff, createRGBA(color), createRGBA(background));
 }
@@ -131,7 +120,7 @@ void BasicRenderer::_clearRegion(Region region, unsigned int color) {
     unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
     for (unsigned int x = region.x_start; x <= region.x_end; x++) {
         for (unsigned int y = region.y_start; y <= region.y_end; y++) {
-            if (authorized(RendererBounds, x, y)) 
+            if (authorized(x, y)) 
                 *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color;
         }   
     }
@@ -149,7 +138,7 @@ void BasicRenderer::_drawHLine(unsigned int x_start, unsigned int x_end, unsigne
     --stroke; 
      unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
      for (unsigned int x = x_start; x <= x_end; x++) {
-        if (authorized(RendererBounds, x, y)) {
+        if (authorized(x, y)) {
             *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color;
         }
      }
@@ -159,7 +148,7 @@ void BasicRenderer::_drawVLine(unsigned int y_start, unsigned int y_end, unsigne
     --stroke; 
      unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
      for (unsigned int y = y_start; y <= y_end; y++) {
-        if (authorized(RendererBounds, x, y)) {
+        if (authorized(x, y)) {
             *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color;
         }
      }
@@ -170,19 +159,19 @@ void BasicRenderer::_drawHRect(Geometry geo, unsigned int color) {
 
     unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
         for (unsigned int x = geo.region.x_start; x <= geo.region.x_end; x++) {
-            if (authorized(RendererBounds, x, geo.region.y_start)) {
+            if (authorized(x, geo.region.y_start)) {
                 *(unsigned int*)(pixPtr + x + (geo.region.y_start * frameBuffer->PixelsPerScanline)) = color;
             }
-            if (authorized(RendererBounds, x, geo.region.y_end)) {
+            if (authorized(x, geo.region.y_end)) {
                 *(unsigned int*)(pixPtr + x + (geo.region.y_end * frameBuffer->PixelsPerScanline)) = color;
             }
         }
         for (unsigned int y = geo.region.y_start; y <= geo.region.y_end; y++) {
 
-            if (authorized(RendererBounds, geo.region.x_start, y)) {
+            if (authorized(geo.region.x_start, y)) {
                 *(unsigned int*)(pixPtr + geo.region.x_start + (y * frameBuffer->PixelsPerScanline)) = color;
             }
-            if (authorized(RendererBounds, geo.region.x_end, y)) {
+            if (authorized(geo.region.x_end, y)) {
                 *(unsigned int*)(pixPtr + geo.region.x_end + (y * frameBuffer->PixelsPerScanline)) = color;
             }
         }

@@ -33,7 +33,7 @@ class BasicRenderer {
         void SetCursorPos(unsigned int x = 0, unsigned int y = (unsigned int)NULL); 
         Point GetCursorPos();
 
-        bool in_authorized_region(unsigned int x, unsigned int y);
+        bool authorized(unsigned int x, unsigned int y);
 
     private:
         Region RendererBounds;
@@ -49,5 +49,3 @@ class BasicRenderer {
 
 };
 
-
-bool authorized(Region bounds, unsigned int x, unsigned int y);
