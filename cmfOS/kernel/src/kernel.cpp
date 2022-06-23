@@ -54,9 +54,10 @@ extern "C" void _start(BootInfo* bootInfo) {
     asm ("mov %0, %%cr3" : : "r" (PML4));
 
     MenuRenderer.clearScreen(BLUE);
-    
-    unsigned char i, j, k;
+    KernelRenderer.drawFShape({RECT, {100, 200, 300, 400}, 1}, WHITE, GREEN);
+    KernelRenderer.drawFShape({RECT, {125, 175, 325, 375}, 1}, WHITE, BLACK);
 
+    unsigned char i, j, k;
     while (true) {
         i = 0xa0; // why doens't the for loop does this automatically? 
         for (i = 0xa0; i < 0xff; i += 0x01) {
@@ -64,9 +65,9 @@ extern "C" void _start(BootInfo* bootInfo) {
             for (j = 0xa0; j < 0xff; j += 0x01) {
                 k = 0xa0; // why doens't the for loop does this automatically? 
                 for (k = 0xa0; k < 0xff; k += 0x01) {
-                    MenuRenderer.CursorPosition = {0, 0};
+                    MenuRenderer.SetCursorPos(0, 0);
+                    KernelRenderer.SetCursorPos(0, 0);
                     MenuRenderer.printString("https://github.com/GeetanshGautam0/CMF-OS-V3", {i, j, k, 0xff}, BLUE);
-                    KernelRenderer.CursorPosition = {0, KernelRenderer.RendererBounds.y_start};
                     KernelRenderer.printString(to_hstring(i), RED, YELLOW);
                     KernelRenderer.printString(to_hstring(j), YELLOW, RED);
                     KernelRenderer.printString(to_hstring(k), RED, YELLOW);

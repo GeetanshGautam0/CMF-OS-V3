@@ -4,6 +4,7 @@
 #include "math.h"
 #include "SimpleFont.h"
 #include "efiMemory.h"
+#include "cstr.h"
 
 
 #define COLOR_MODE "BRGA"

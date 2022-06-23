@@ -17,3 +17,10 @@ double clamp(double min, double actual, double max) {
     return min <= actual && actual <= max ? actual : (min > actual ? min : max);
 }
 
+int clamp(int min, int actual, int max) { 
+    return min <= actual && actual <= max ? actual : (min > actual ? min : max);
+}
+
+unsigned int clamp(unsigned int min, unsigned int actual, unsigned int max) { 
+    return min <= actual && actual <= max ? actual : (min > actual ? min : max);
+}
