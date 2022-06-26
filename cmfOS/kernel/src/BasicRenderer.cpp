@@ -1,26 +1,55 @@
 #include "BasicRenderer.h"
 
 
+void BasicRenderer::trapCursor() {
+    if (!ready) return;
+    if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
+
+    if (CursorPosition.x + font->font_size.w > RendererBounds.x_end) {
+            CursorPosition.x = RendererBounds.x_start;
+            CursorPosition.y += font->font_size.h;
+    }
+
+    if (CursorPosition.y + font->font_size.h > RendererBounds.y_end) {
+        CursorPosition.x = RendererBounds.x_start;
+        CursorPosition.y = RendererBounds.y_start;
+    }
+
+    if (CursorPosition.x < RendererBounds.x_start) CursorPosition.x = RendererBounds.x_start;
+    if (CursorPosition.y < RendererBounds.y_start) CursorPosition.y = RendererBounds.y_start;
+}
+
 bool BasicRenderer::authorized(unsigned int x, unsigned int y) {
     return (
            RendererBounds.x_start <= x 
         && RendererBounds.y_start <= y 
         && x <= RendererBounds.x_end 
         && y <= RendererBounds.y_end
+        && ready
     );
 }
 
-
-
 Point BasicRenderer::GetCursorPos() { return CursorPosition; }
 
+FontSize BasicRenderer::GetFontSize() { return font->font_size; }
+
+Region BasicRenderer::GetBounds() { return RendererBounds; }
+
+Color BasicRenderer::GetBackgroundColor() { return RegionBackgroundColor; }
+
+bool BasicRenderer::IsReady() { return ready; }
+
 void BasicRenderer::SetCursorPos(unsigned int x, unsigned int y) {
+    if (!ready) return;
+    x = x * font->font_size.w;  // Treats like lines and characters now, instead of pixels
+    y = y * font->font_size.h;  // Treats like lines and characters now, instead of pixels
+
     CursorPosition = {clamp(RendererBounds.x_start, x, RendererBounds.x_end), CursorPosition.y};
     CursorPosition = {CursorPosition.x, clamp(RendererBounds.y_start, y, RendererBounds.y_end)};
 }
 
 
-BasicRenderer::BasicRenderer(FrameBuffer* frame_buffer, PSF1_FONT* simple_font, Region bounds) 
+void BasicRenderer::setup(FrameBuffer* frame_buffer, PSF1_FONT* simple_font, Region bounds) 
 {
     if (! (
             0 <= bounds.x_start 
@@ -30,13 +59,7 @@ BasicRenderer::BasicRenderer(FrameBuffer* frame_buffer, PSF1_FONT* simple_font, 
          && bounds.x_start < bounds.x_end
          && bounds.y_start < bounds.y_end
     ) ) {
-        if (!(bounds.x_start < bounds.x_end && bounds.y_start < bounds.y_end)) RendererBounds = {0, 0, 0, 0};
-        else RendererBounds = { 
-            (0 <= bounds.x_start ? bounds.x_start : 0),
-            (bounds.x_end <= frame_buffer->Width ? bounds.x_end : frame_buffer->Width),
-            (0 <= bounds.y_start ? bounds.y_start : 0),
-            (bounds.y_end <= frame_buffer->Height ? bounds.y_end : frame_buffer->Height)
-        };
+        return; 
     } else {
         RendererBounds = bounds;
     }
@@ -44,6 +67,7 @@ BasicRenderer::BasicRenderer(FrameBuffer* frame_buffer, PSF1_FONT* simple_font, 
     frameBuffer = frame_buffer;
     font = simple_font;
     CursorPosition = {0, 0};
+    ready = true;
 }
 
 
@@ -66,49 +90,68 @@ void BasicRenderer::_putChar(char chr, unsigned int xOff, unsigned int yOff, uns
 }
 
 
-void BasicRenderer::printString(const char* string, Color color, Color background) {
+void BasicRenderer::printString(const char* string, Color color, AutoColor background) {
+    if (!ready) return;
     unsigned long color_int = createRGBA(color);
-    unsigned long background_int = createRGBA(background);
+    unsigned long background_int = background.UseDefault ? createRGBA(RegionBackgroundColor) : createRGBA(background.color);
 
-    if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
-
-    if (CursorPosition.x + font->font_size.w > RendererBounds.x_end) {
-            CursorPosition.x = RendererBounds.x_start;
-            CursorPosition.y += font->font_size.h;
-    }
-
-    if (CursorPosition.y + font->font_size.h > RendererBounds.y_end) {
-        CursorPosition.x = RendererBounds.x_start;
-        CursorPosition.y = RendererBounds.y_start;
-    }
-
-    if (CursorPosition.x < RendererBounds.x_start) CursorPosition.x = RendererBounds.x_start;
-    if (CursorPosition.y < RendererBounds.y_start) CursorPosition.y = RendererBounds.y_start;
+    trapCursor();
 
     char* chr = (char*)string;
     while (*chr != 0) {
-        _putChar(*chr, CursorPosition.x, CursorPosition.y, color_int, background_int);
-        CursorPosition.x += font->font_size.w;
-        
-        if (CursorPosition.x + font->font_size.w > RendererBounds.x_end) {
-            CursorPosition.x = RendererBounds.x_start;
+        if (*chr == '\n') {
             CursorPosition.y += font->font_size.h;
         }
-
-        if (CursorPosition.y + font->font_size.h > RendererBounds.y_end) {
-            CursorPosition.x = RendererBounds.x_start;
-            CursorPosition.y = RendererBounds.y_start;
+        else if (*chr == '\r') {
+            CursorPosition.x = 0;
+        }
+        else if (*chr == '\t') {
+            for (int i = 0; i < 4; i++) {
+                _putChar(' ', CursorPosition.x, CursorPosition.y, color_int, background_int);
+                CursorPosition.x += font->font_size.w;
+                trapCursor(); 
+            }
+        }
+        else {
+            _putChar(*chr, CursorPosition.x, CursorPosition.y, color_int, background_int);
+            CursorPosition.x += font->font_size.w;
         }
 
-        if (CursorPosition.x < RendererBounds.x_start) CursorPosition.x = RendererBounds.x_start;
-        if (CursorPosition.y < RendererBounds.y_start) CursorPosition.y = RendererBounds.y_start;
-
+        trapCursor();
         chr++;
     }
 }
 
 
+void BasicRenderer::printChar(const char character, Color color, AutoColor background) {
+    if (!ready) return;
+    unsigned long color_int = createRGBA(color);
+    unsigned long background_int = background.UseDefault ? createRGBA(RegionBackgroundColor) : createRGBA(background.color);
+
+    trapCursor();
+    if (character == '\n') {
+            CursorPosition.y += font->font_size.h;
+    }
+    else if (character == '\r') {
+        CursorPosition.x = 0;
+    }
+    else if (character == '\t') {
+        for (int i = 0; i < 4; i++) {
+            _putChar(' ', CursorPosition.x, CursorPosition.y, color_int, background_int);
+            CursorPosition.x += font->font_size.w;
+            trapCursor(); 
+        }
+    }
+    else {
+        _putChar(character, CursorPosition.x, CursorPosition.y, color_int, background_int);
+        CursorPosition.x += font->font_size.w;
+    }
+    trapCursor();
+}
+
+
 void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, Color color, Color background) {    
+    if (!ready) return;
     if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
     if (!(authorized(xOff, yOff) && authorized(xOff + font->font_size.w, yOff + font->font_size.h))) return;
 
@@ -127,8 +170,16 @@ void BasicRenderer::_clearRegion(Region region, unsigned int color) {
 }
 
 
-void BasicRenderer::clearRegion(Region region, Color color) { _clearRegion(region, createRGBA(color)); }
-void BasicRenderer::clearScreen(Color color) { _clearRegion(RendererBounds, createRGBA(color)); }
+void BasicRenderer::clearRegion(Region region, Color color) { 
+    if (!ready) return;
+    _clearRegion(region, createRGBA(color)); 
+}
+void BasicRenderer::clearScreen(Color color, bool ResetCursorPos) { 
+    if (!ready) return;
+    _clearRegion(RendererBounds, createRGBA(color)); 
+    RegionBackgroundColor = color;
+    if (ResetCursorPos) SetCursorPos(0, 0);
+}
 
 
 // Shape Renderers (private)
@@ -186,6 +237,7 @@ void BasicRenderer::_drawFRect(Geometry geo, unsigned int color, unsigned int fi
 
 // Shape Renderers (public)
 void BasicRenderer::drawHShape(Geometry geometry, Color color) {
+    if (!ready) return;
     unsigned long color_int = createRGBA(color);
 
     if (geometry.shape == RECT) 
@@ -198,6 +250,7 @@ void BasicRenderer::drawHShape(Geometry geometry, Color color) {
 
 
 void BasicRenderer::drawFShape(Geometry geometry, Color color, Color fill_color) {
+    if (!ready) return;
     unsigned long color_int = createRGBA(color);
     unsigned long fill_color_int = createRGBA(fill_color);
 
