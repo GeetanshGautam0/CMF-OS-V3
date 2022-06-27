@@ -1,5 +1,6 @@
 #include "kernelUtil.h"
-#include "cstr.h"
+#include "std/cstr.h"
+#include "gdt/gdt.h"
 
 KernelInfo kernelInfo;
 PageTableManager PTM = NULL;
@@ -13,8 +14,6 @@ void PrepMem(BootInfo* bootInfo) {
     KernelRenderer.setup(bootInfo->frameBuffer,  bootInfo->psf1_font,  {0, bootInfo->frameBuffer->Width, (unsigned int)(bootInfo->psf1_font->font_size.h*2), bootInfo->frameBuffer->Height});
     BasicRenderer MenuRenderer;
     MenuRenderer.setup(bootInfo->frameBuffer, bootInfo->psf1_font, {0, bootInfo->frameBuffer->Width, 0, (unsigned int)(bootInfo->psf1_font->font_size.h*2)});
-    KernelRenderer.clearScreen();
-    MenuRenderer.clearScreen();
 
     // Kernel mem locking
     uint64_t mMapEntries = bootInfo->mMapSize / bootInfo->mMapDescriptorSize;
@@ -49,6 +48,10 @@ void PrepMem(BootInfo* bootInfo) {
 
 KernelInfo InitKernel(BootInfo* bootInfo) {
     if (kernelInit) return kernelInfo;
+    GDTDescriptor gdtDescriptor;
+    gdtDescriptor.Size = sizeof(GDT) - 1;
+    gdtDescriptor.Offset = (uint64_t)&DefaultGDT;
+    LoadGDT(&gdtDescriptor);
     PrepMem(bootInfo);
 
     memset (bootInfo->frameBuffer->BaseAddress, 0, bootInfo->frameBuffer->BufferSize);
