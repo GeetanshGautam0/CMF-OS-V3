@@ -1,13 +1,13 @@
 #pragma once 
 #include <stddef.h>
 #include "BasicRenderer.h"
-#include "ktypedef.h"       // Defines color mode in here
-#include "cstr.h"
+#include "std/ktypedef.h"       // Defines color mode in here
+#include "std/cstr.h"
 #include "paging/PageFrameAllocator.h"
 #include "paging/PageMapIndexer.h"
 #include "paging/PageTableManager.h"
 #include "paging/paging.h"
-#include "memory.h"
+#include "std/memory.h"
 
 
 extern uint64_t _KernelStart;
