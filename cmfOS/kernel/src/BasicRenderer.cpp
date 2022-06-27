@@ -1,18 +1,29 @@
 #include "BasicRenderer.h"
 
 
-void BasicRenderer::trapCursor() {
+#ifndef RENDERER_BLOCK_CHUNK_SIZE
+#define RENDERER_BLOCK_CHUNK_SIZE 256
+#endif
+
+
+void BasicRenderer::trapCursor(bool rollover) {
     if (!ready) return;
     if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
 
     if (CursorPosition.x + font->font_size.w > RendererBounds.x_end) {
+        if (rollover) {
             CursorPosition.x = RendererBounds.x_start;
             CursorPosition.y += font->font_size.h;
+        } 
+        else CursorPosition.x = RendererBounds.x_end - font->font_size.w;
     }
 
     if (CursorPosition.y + font->font_size.h > RendererBounds.y_end) {
-        CursorPosition.x = RendererBounds.x_start;
-        CursorPosition.y = RendererBounds.y_start;
+        if (rollover) {
+            CursorPosition.x = RendererBounds.x_start;
+            CursorPosition.y = RendererBounds.y_start;
+        } 
+        else CursorPosition.y = CursorPosition.y - font->font_size.h;
     }
 
     if (CursorPosition.x < RendererBounds.x_start) CursorPosition.x = RendererBounds.x_start;
@@ -41,11 +52,11 @@ bool BasicRenderer::IsReady() { return ready; }
 
 void BasicRenderer::SetCursorPos(unsigned int x, unsigned int y) {
     if (!ready) return;
-    x = x * font->font_size.w;  // Treats like lines and characters now, instead of pixels
-    y = y * font->font_size.h;  // Treats like lines and characters now, instead of pixels
+    x = x * font->font_size.w + RendererBounds.x_start;  // Treats like lines and characters now, instead of pixels
+    y = y * font->font_size.h + RendererBounds.y_start;  // Treats like lines and characters now, instead of pixels
 
-    CursorPosition = {clamp(RendererBounds.x_start, x, RendererBounds.x_end), CursorPosition.y};
-    CursorPosition = {CursorPosition.x, clamp(RendererBounds.y_start, y, RendererBounds.y_end)};
+    CursorPosition = {x, y};
+    trapCursor(false);
 }
 
 
@@ -161,8 +172,8 @@ void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, Colo
 
 void BasicRenderer::_clearRegion(Region region, unsigned int color) {
     unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
-    for (unsigned int x = region.x_start; x <= region.x_end; x++) {
-        for (unsigned int y = region.y_start; y <= region.y_end; y++) {
+    for (unsigned int y = region.y_start; y < region.y_end; y++) {
+        for (unsigned int x = region.x_start; x < region.x_end; x++) { 
             if (authorized(x, y)) 
                 *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color;
         }   
@@ -170,20 +181,20 @@ void BasicRenderer::_clearRegion(Region region, unsigned int color) {
 }
 
 
-void BasicRenderer::clearRegion(Region region, Color color) { 
+void BasicRenderer::clearRegion(Region region, AutoColor color) { 
+    Color NColor;
+    if (color.UseDefault) NColor = RegionBackgroundColor;
+    else NColor = color.color;
     if (!ready) return;
-    _clearRegion(region, createRGBA(color)); 
+    _clearRegion(region, createRGBA(NColor)); 
 }
+
 void BasicRenderer::clearScreen(Color color, bool ResetCursorPos) { 
     if (!ready) return;
-    _clearRegion(RendererBounds, createRGBA(color)); 
+    _clearRegion(RendererBounds, createRGBA(color));
     RegionBackgroundColor = color;
     if (ResetCursorPos) SetCursorPos(0, 0);
 }
-
-
-// Shape Renderers (private)
-
 
 void BasicRenderer::_drawHLine(unsigned int x_start, unsigned int x_end, unsigned int y, unsigned int color, unsigned int stroke) {
     --stroke; 
@@ -228,14 +239,11 @@ void BasicRenderer::_drawHRect(Geometry geo, unsigned int color) {
         }
 }
 
-
 void BasicRenderer::_drawFRect(Geometry geo, unsigned int color, unsigned int fill_color) {
     _clearRegion(geo.region, fill_color);
     if (geo.stroke_width > 0) _drawHRect(geo, color);
 }
 
-
-// Shape Renderers (public)
 void BasicRenderer::drawHShape(Geometry geometry, Color color) {
     if (!ready) return;
     unsigned long color_int = createRGBA(color);

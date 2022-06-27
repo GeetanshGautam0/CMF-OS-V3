@@ -23,8 +23,8 @@ struct Geometry
 // union AutoColor 
 struct AutoColor
     {
-        Color color = BLACK;
         bool UseDefault = true;
+        Color color = BLACK;
     };
 
 class BasicRenderer {
@@ -32,12 +32,12 @@ class BasicRenderer {
         void setup(FrameBuffer* frame_buffer, PSF1_FONT* simple_font, Region bounds);
         void printString(const char* string, Color color, AutoColor background);
         void printChar(const char character, Color color, AutoColor background);
-        void putChar(char chr, unsigned int xOff, unsigned int yOff, Color color = WHITE, Color background = BLACK);
-        void clearRegion(Region region, Color color = RED);
-        void clearScreen(Color color = BLACK, bool resetCursorPos = false);
-        void drawHShape(Geometry geometry, Color color = WHITE);
-        void drawFShape(Geometry geometry, Color color = WHITE, Color fill_color = BLUE);
-        void SetCursorPos(unsigned int x = 0, unsigned int y = 0); 
+        void putChar(char chr, unsigned int xOff, unsigned int yOff, Color color, Color background);
+        void clearRegion(Region region, AutoColor color);
+        void clearScreen(Color color, bool resetCursorPos = true);
+        void drawHShape(Geometry geometry, Color color);
+        void drawFShape(Geometry geometry, Color color, Color fill_color);
+        void SetCursorPos(unsigned int x, unsigned int y); 
         bool IsReady();
         Point GetCursorPos();
         FontSize GetFontSize();
@@ -58,6 +58,6 @@ class BasicRenderer {
         void _drawHRect(Geometry geo, unsigned int color);
         void _drawFRect(Geometry geo, unsigned int color, unsigned int fill_color);
         Color RegionBackgroundColor = BLACK;
-        void trapCursor();
+        void trapCursor(bool rollover = true);
 };
 

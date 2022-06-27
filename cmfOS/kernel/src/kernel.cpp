@@ -5,19 +5,49 @@ extern "C" void _start(BootInfo* bootInfo) {
     PageTableManager* PTM = kernelInfo.pageTableManager;
     BasicRenderer KernelRenderer = kernelInfo.kernelRenderer;
     BasicRenderer MenuRenderer = kernelInfo.menuRenderer;
+    Region KernelBounds = KernelRenderer.GetBounds();
 
     MenuRenderer.clearScreen(BLUE, true);
-    Region KernelRegion = KernelRenderer.GetBounds();
-    MenuRenderer.printString("x_start -> x_end:\t", WHITE, {BLACK, true});
-    MenuRenderer.printString(to_string((uint64_t)KernelRegion.x_start), WHITE, {BLACK, true}); 
-    MenuRenderer.printString(" -> ", WHITE, {BLACK, true}); 
-    MenuRenderer.printString(to_string((uint64_t)KernelRegion.x_end), WHITE, {BLACK, true});
-    
-    MenuRenderer.SetCursorPos(0, 1);
-    MenuRenderer.printString("y_start -> y_end:\t", WHITE, {BLACK, true});
-    MenuRenderer.printString(to_string((uint64_t)KernelRegion.y_start), WHITE, {BLACK, true}); 
-    MenuRenderer.printString(" -> ", WHITE, {BLACK, true}); 
-    MenuRenderer.printString(to_string((uint64_t)KernelRegion.y_end), WHITE, {BLACK, true});
+    KernelRenderer.clearScreen(WHITE, true);
+
+    Region RECT_REGION;
+    Color RECT_COLORS[7] = { RED, CYAN, GREEN, YELLOW, MAGENTA, BLACK, BLUE };
+    Color RECT_COLOR;
+    unsigned int RECT_WIDTH = 50;
+    unsigned int RECT_HEIGHT = RECT_WIDTH;
+    unsigned int acc;
+
+    // Sample "animation"
+    while (true) {
+        acc = 0;
+
+        for (unsigned int x = KernelBounds.x_start; x <= KernelBounds.x_end - RECT_WIDTH; x += RECT_WIDTH) {
+            RECT_COLOR = RECT_COLORS[acc % 7];
+            MenuRenderer.SetCursorPos(0, 0); 
+            MenuRenderer.printString(
+                "SOURCE CODE: https://github.com/GeetanshGautam0/CMF-OS-V3",
+                RECT_COLOR,
+                {true, RECT_COLOR}
+            );
+            for (unsigned int y = KernelBounds.y_start; y <= KernelBounds.y_end - RECT_HEIGHT; y++) {
+                RECT_REGION = {x, x + RECT_WIDTH, y, y + RECT_HEIGHT};
+                KernelRenderer.drawFShape({RECT, RECT_REGION, 0}, WHITE, RECT_COLOR);    
+                // ^^ is the same as saying KR.clearRegion(RECT, {false, MAGENTA}) since border width is 0
+
+                for (int f = 0; f < 10e5; f++) continue; // Delay (don't have PID setup yet)
+                KernelRenderer.clearRegion({
+                    RECT_REGION.x_start,
+                    RECT_REGION.x_end,
+                    RECT_REGION.y_start - 1,
+                    RECT_REGION.y_start,
+                }, {true, RED}); // No red TRAIL should be visible; indicates an error
+            }
+            KernelRenderer.clearRegion(RECT_REGION, {true, RED}); // No red TRAIL should be visible; indicates an error
+            
+            ++ acc;
+            if (acc > 201) acc = 0;
+        }
+    }
 
     return;
 }
