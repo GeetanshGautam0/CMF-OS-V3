@@ -1,10 +1,10 @@
 #include "kernelUtil.h"
 
+bool ANIMATE = true;
+
 extern "C" void _start(BootInfo* bootInfo) {
     KernelInfo kernelInfo = InitKernel(bootInfo);
     PageTableManager* PTM = kernelInfo.pageTableManager;
-    BasicRenderer KernelRenderer = kernelInfo.kernelRenderer;
-    BasicRenderer MenuRenderer = kernelInfo.menuRenderer;
     Region KernelBounds = KernelRenderer.GetBounds();
 
     MenuRenderer.clearScreen(BLUE, true);
@@ -18,7 +18,7 @@ extern "C" void _start(BootInfo* bootInfo) {
     unsigned int acc;
 
     // Sample "animation"
-    while (true) {
+    while (ANIMATE) {
         acc = 0;
 
         for (unsigned int x = KernelBounds.x_start; x <= KernelBounds.x_end - RECT_WIDTH; x += RECT_WIDTH) {
