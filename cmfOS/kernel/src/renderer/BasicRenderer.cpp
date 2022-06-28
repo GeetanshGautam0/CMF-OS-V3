@@ -270,7 +270,6 @@ void BasicRenderer::drawHShape(Geometry geometry, Color color) {
         _drawVLine(geometry.region.y_start, geometry.region.y_end, geometry.region.x_start, color_int, geometry.stroke_width);
 }
 
-
 void BasicRenderer::drawFShape(Geometry geometry, Color color, Color fill_color) {
     if (!a2r()) return;
     unsigned long color_int = createRGBA(color);
@@ -283,3 +282,29 @@ void BasicRenderer::drawFShape(Geometry geometry, Color color, Color fill_color)
     else if (geometry.shape == VERT_LINE) 
         _drawVLine(geometry.region.y_start, geometry.region.y_end, geometry.region.x_start, color_int, geometry.stroke_width);
 }
+
+void BasicRenderer::deletePrevious() {
+    if (!a2r()) return;
+    if(CursorPosition.x <= RendererBounds.x_start) {
+        if (CursorPosition.y <= RendererBounds.y_start) {
+            CursorPosition = {RendererBounds.x_start, RendererBounds.y_start};
+            return;
+        } else {
+            CursorPosition.y -= font->font_size.h;
+        }
+    }
+    else {
+        CursorPosition.x -= font->font_size.w;
+    }
+
+    trapCursor();
+
+    unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
+    unsigned long background = createRGBA(RegionBackgroundColor);
+    unsigned long xOff = CursorPosition.x, yOff = CursorPosition.y;
+    for (unsigned long y = yOff; y < yOff + font->psf1_Header->charsize; y++) {
+        for (unsigned long x = xOff; x < xOff + font->font_size.w; x++) {
+            *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = background;
+        }   
+    }
+}   

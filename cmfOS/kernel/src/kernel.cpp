@@ -1,6 +1,8 @@
 #include "kernelUtil.h"
 
-bool ANIMATE = true;
+
+bool ANIMATE = false;
+
 
 extern "C" void _start(BootInfo* bootInfo) {
     KernelInfo kernelInfo = InitKernel(bootInfo);
@@ -9,6 +11,8 @@ extern "C" void _start(BootInfo* bootInfo) {
 
     MenuRenderer.clearScreen(BLUE, true);
     KernelRenderer.clearScreen(WHITE, true);
+
+    while (!ANIMATE); // If not animating, stop here.
 
     Region RECT_REGION;
     Color RECT_COLORS[7] = { RED, CYAN, GREEN, YELLOW, MAGENTA, BLACK, BLUE };

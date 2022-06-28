@@ -37,13 +37,15 @@ class BasicRenderer {
         void clearScreen(Color color, bool resetCursorPos = true);
         void drawHShape(Geometry geometry, Color color);
         void drawFShape(Geometry geometry, Color color, Color fill_color);
+        bool authorized(unsigned int x, unsigned int y);
+        void deletePrevious();
+
         void SetCursorPos(unsigned int x, unsigned int y); 
         bool IsReady();
         Point GetCursorPos();
         FontSize GetFontSize();
         Region GetBounds();
         Color GetBackgroundColor();
-        bool authorized(unsigned int x, unsigned int y);
         void Lock();
 
     private:

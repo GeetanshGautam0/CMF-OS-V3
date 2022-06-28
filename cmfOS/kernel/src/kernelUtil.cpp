@@ -7,7 +7,7 @@ bool kernelInit = false;
 void PrepMem(BootInfo* bootInfo) {
     if (kernelInit) return;
     // Renderers
-    KernelRenderer.setup(bootInfo->frameBuffer,  bootInfo->psf1_font,  {0, bootInfo->frameBuffer->Width, (unsigned int)(bootInfo->psf1_font->font_size.h*2), bootInfo->frameBuffer->Height});
+    KernelRenderer.setup(bootInfo->frameBuffer, bootInfo->psf1_font, {0, bootInfo->frameBuffer->Width, (unsigned int)(bootInfo->psf1_font->font_size.h*2), bootInfo->frameBuffer->Height});
     MenuRenderer.setup(bootInfo->frameBuffer, bootInfo->psf1_font, {0, bootInfo->frameBuffer->Width, 0, (unsigned int)(bootInfo->psf1_font->font_size.h*2)});
 
     // Kernel mem locking
