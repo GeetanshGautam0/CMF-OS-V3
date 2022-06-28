@@ -3,6 +3,7 @@
 #include "../renderer/KernelRenderer.h"
 #include "../IO.h"
 #include "../std/ktypedef.h"
+#include "../input/KB.h"
 
 #define PIC1_COMMAND    0x20
 #define PIC1_DATA       0x21

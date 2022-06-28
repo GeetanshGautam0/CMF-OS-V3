@@ -42,8 +42,8 @@ __attribute__((interrupt)) void SystemError_Handler(struct interrupt_frame* fram
 }
 
 __attribute__((interrupt)) void KeyboardInt_Handler(struct interrupt_frame* frame) {
-    KernelRenderer.printString("Pressed", BLACK, {false, CYAN});
     uint8_t scanCode = inb(0x60);
+    HandleKeyboard(scanCode);
     PIC_EndMaster();
 }
 
