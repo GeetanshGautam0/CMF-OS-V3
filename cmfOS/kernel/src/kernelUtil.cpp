@@ -99,7 +99,19 @@ void PrepInterrupts() {
     int_SecurityException->type_attr = IDT_TA_InterruptGate;
     int_SecurityException->selector = 0x08;
 
+    IDTDescEntry* int_KB = (IDTDescEntry*)(idtr.Offset + 0x21 * sizeof(IDTDescEntry));
+    int_KB->SetOffset((uint64_t)KeyboardInt_Handler);
+    int_KB->type_attr = IDT_TA_InterruptGate;
+    int_KB->selector = 0x08;
+
     asm ("lidt %0" : : "m" (idtr));
+
+    RemapPIC();
+
+    outb(PIC1_DATA, 0b11111101);
+    outb(PIC2_DATA, 0b11111111);
+
+    asm ("sti");
 }
 
 KernelInfo InitKernel(BootInfo* bootInfo) {
