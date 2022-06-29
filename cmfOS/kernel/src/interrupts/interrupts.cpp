@@ -1,50 +1,56 @@
 #include "interrupts.h"
 
 
-__attribute__((interrupt)) void PageFault_Handler(struct interrupt_frame* frame){
+__attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame){
     Panic("Page fault detected", true, true);
 }
 
-__attribute__((interrupt)) void DoubleFault_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void DoubleFault_Handler(interrupt_frame* frame) {
     Panic("Double fault detected", true, true);
 }
 
-__attribute__((interrupt)) void GPFault_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void GPFault_Handler(interrupt_frame* frame) {
     Panic("General Protection fault detected", true, true);
 }
 
-__attribute__((interrupt)) void DivisionByZero_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void DivisionByZero_Handler(interrupt_frame* frame) {
     Panic("Division By Zero error detected", true, true);
 }
 
-__attribute__((interrupt)) void BoundRangeExceeded_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void BoundRangeExceeded_Handler(interrupt_frame* frame) {
     Panic("Array-like object: Bound range exceeded", true, true);
 }
 
-__attribute__((interrupt)) void InvalidOpcode_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void InvalidOpcode_Handler(interrupt_frame* frame) {
     Panic("Invalid Opcode", true, true);
 }
 
-__attribute__((interrupt)) void DeviceNotAvailable_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void DeviceNotAvailable_Handler(interrupt_frame* frame) {
     Panic("Requested device is not available", true, true);
 }
 
-__attribute__((interrupt)) void SegmentNotPresent_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void SegmentNotPresent_Handler(interrupt_frame* frame) {
     Panic("Segment not present", true, true);
 }
 
-__attribute__((interrupt)) void StackSegmentFault_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void StackSegmentFault_Handler(interrupt_frame* frame) {
     Panic("Stack segment fault detected", true, true);
 }
 
-__attribute__((interrupt)) void SystemError_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void SystemError_Handler(interrupt_frame* frame) {
     Panic("<System Error>", true, true);
 }
 
-__attribute__((interrupt)) void KeyboardInt_Handler(struct interrupt_frame* frame) {
+__attribute__((interrupt)) void KeyboardInt_Handler(interrupt_frame* frame) {
     uint8_t scanCode = inb(0x60);
     HandleKeyboard(scanCode);
     PIC_EndMaster();
+}
+
+__attribute__((interrupt)) void MouseInt_Handler(interrupt_frame* frame) {
+    uint8_t mouseData = inb(0x60);
+    KernelRenderer.printChar('m', BLACK, {false, MAGENTA});
+    PIC_EndSlave();
 }
 
 void PIC_EndMaster() {

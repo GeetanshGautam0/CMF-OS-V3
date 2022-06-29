@@ -15,19 +15,33 @@
 #define ICW1_ICW4       0x01
 #define ICW4_8086       0x01
 
+#define DivByZero_Offset            0x0
+#define BoundRangeExceeded_Offset   0x5
+#define InvalidOpcode_Offset        0x6
+#define DeviceNotAvailable_Offset   0x7
+#define DoubleFault_Offset          0x8
+#define InvTTS_Offset               0xA
+#define SegmentNotPresent_Offset    0xB
+#define StackSegmentFault_Offset    0xC
+#define GPFault_Offset              0xD
+#define PageFault_Offset            0xE
+#define SecurityException_Offset    0x1E
+#define _Offset   0x
+
 struct interrupt_frame;
 
-__attribute__((interrupt)) void PageFault_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void DoubleFault_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void GPFault_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void DivisionByZero_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void BoundRangeExceeded_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void InvalidOpcode_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void DeviceNotAvailable_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void SegmentNotPresent_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void StackSegmentFault_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void SystemError_Handler(struct interrupt_frame* frame);
-__attribute__((interrupt)) void KeyboardInt_Handler(struct interrupt_frame* frame);
+__attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void DoubleFault_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void GPFault_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void DivisionByZero_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void BoundRangeExceeded_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void InvalidOpcode_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void DeviceNotAvailable_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void SegmentNotPresent_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void StackSegmentFault_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void SystemError_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void KeyboardInt_Handler(interrupt_frame* frame);
+__attribute__((interrupt)) void MouseInt_Handler(interrupt_frame* frame);
 
 void RemapPIC();
 void PIC_EndMaster();

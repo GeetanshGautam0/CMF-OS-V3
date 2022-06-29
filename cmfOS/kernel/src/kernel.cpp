@@ -12,6 +12,10 @@ extern "C" void _start(BootInfo* bootInfo) {
     MenuRenderer.clearScreen(BLUE, true);
     KernelRenderer.clearScreen(WHITE, true);
 
+    // ------------------------------------
+    // NO MORE CODE UNDERNEATH THIS COMMENT
+    // ------------------------------------
+
     while (!ANIMATE); // If not animating, stop here.
 
     Region RECT_REGION;

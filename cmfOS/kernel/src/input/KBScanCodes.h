@@ -1,6 +1,7 @@
 #pragma once
 #include "../std/ctypedef.h"
 
+
 namespace QWERTY {
 
     #define LeftShift       0x2A

@@ -13,6 +13,7 @@
 #include "interrupts/interrupts.h"
 #include "interrupts/IDT.h"
 #include "IO.h"
+#include "input/mouse.h"
 
 
 extern uint64_t _KernelStart;
