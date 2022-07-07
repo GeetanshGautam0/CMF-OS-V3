@@ -96,7 +96,7 @@ void BasicRenderer::setup(FrameBuffer* frame_buffer, PSF1_FONT* simple_font, Reg
 }
 
 
-void BasicRenderer::_putChar(char chr, unsigned int xOff, unsigned int yOff, unsigned int color, unsigned int background) {
+void BasicRenderer::_putChar(char chr, unsigned int xOff, unsigned int yOff, unsigned int color, unsigned int background, bool setBG) {
     // Doesn't run aditional checks
     unsigned int* pixPtr = (unsigned int*)frameBuffer->BaseAddress;
     char* fontPtr = (char*)font->glyphBuffer + (chr * font->psf1_Header->charsize);
@@ -105,7 +105,7 @@ void BasicRenderer::_putChar(char chr, unsigned int xOff, unsigned int yOff, uns
         for (unsigned long x = xOff; x < xOff + font->font_size.w; x++) {
             if ( (*fontPtr & (0b10000000 >> (x - xOff))) > 0 ) {
                 *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = color;
-            } else {
+            } else if (setBG) {
                 *(unsigned int*)(pixPtr + x + (y * frameBuffer->PixelsPerScanline)) = background;
             }
         }   
@@ -115,7 +115,7 @@ void BasicRenderer::_putChar(char chr, unsigned int xOff, unsigned int yOff, uns
 }
 
 
-void BasicRenderer::printString(const char* string, Color color, AutoColor background) {
+void BasicRenderer::printString(const char* string, Color color, AutoColor background, bool sBG) {
     if (!a2r()) return;
     unsigned long color_int = createRGBA(color);
     unsigned long background_int = background.UseDefault ? createRGBA(RegionBackgroundColor) : createRGBA(background.color);
@@ -132,13 +132,13 @@ void BasicRenderer::printString(const char* string, Color color, AutoColor backg
         }
         else if (*chr == '\t') {
             for (int i = 0; i < 4; i++) {
-                _putChar(' ', CursorPosition.x, CursorPosition.y, color_int, background_int);
+                _putChar(' ', CursorPosition.x, CursorPosition.y, color_int, background_int, sBG);
                 CursorPosition.x += font->font_size.w;
                 trapCursor(); 
             }
         }
         else {
-            _putChar(*chr, CursorPosition.x, CursorPosition.y, color_int, background_int);
+            _putChar(*chr, CursorPosition.x, CursorPosition.y, color_int, background_int, sBG);
             CursorPosition.x += font->font_size.w;
         }
 
@@ -148,7 +148,7 @@ void BasicRenderer::printString(const char* string, Color color, AutoColor backg
 }
 
 
-void BasicRenderer::printChar(const char character, Color color, AutoColor background) {
+void BasicRenderer::printChar(const char character, Color color, AutoColor background, bool sBG) {
     if (!a2r()) return;
     unsigned long color_int = createRGBA(color);
     unsigned long background_int = background.UseDefault ? createRGBA(RegionBackgroundColor) : createRGBA(background.color);
@@ -162,25 +162,26 @@ void BasicRenderer::printChar(const char character, Color color, AutoColor backg
     }
     else if (character == '\t') {
         for (int i = 0; i < 4; i++) {
-            _putChar(' ', CursorPosition.x, CursorPosition.y, color_int, background_int);
+            _putChar(' ', CursorPosition.x, CursorPosition.y, color_int, background_int, sBG);
             CursorPosition.x += font->font_size.w;
             trapCursor(); 
         }
     }
     else {
-        _putChar(character, CursorPosition.x, CursorPosition.y, color_int, background_int);
+        _putChar(character, CursorPosition.x, CursorPosition.y, color_int, background_int, sBG);
         CursorPosition.x += font->font_size.w;
     }
     trapCursor();
 }
 
 
-void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, Color color, Color background) {    
+void BasicRenderer::putChar(char chr, unsigned int xOff, unsigned int yOff, Color color, AutoColor background, bool sBG) {    
     if (!a2r()) return;
+    unsigned long background_int = background.UseDefault ? createRGBA(RegionBackgroundColor) : createRGBA(background.color);
     if (font == NULL || frameBuffer == NULL) return;  // not ready to print yet.
     if (!(authorized(xOff, yOff) && authorized(xOff + font->font_size.w, yOff + font->font_size.h))) return;
 
-    _putChar(chr, xOff, yOff, createRGBA(color), createRGBA(background));
+    _putChar(chr, xOff, yOff, createRGBA(color), background_int, sBG);
 }
 
 
@@ -308,3 +309,70 @@ void BasicRenderer::deletePrevious() {
         }   
     }
 }   
+
+void BasicRenderer::putPix(uint32_t x, uint32_t y, uint32_t color) {
+    *(uint32_t*)((uint64_t)frameBuffer->BaseAddress + (x*4) + (y * frameBuffer->PixelsPerScanline * 4)) = color;
+}
+
+uint32_t BasicRenderer::getPix(uint32_t x, uint32_t y) {
+    return *(uint32_t*)((uint64_t)frameBuffer->BaseAddress + (x*4) + (y * frameBuffer->PixelsPerScanline * 4));    
+}
+
+void BasicRenderer::clearMouseCursor(uint8_t* MouseCursor, Point pos) {
+    if (!a2r() || !MouseDrawn) return;
+
+    int yMax = 16;
+    int xMax = 16;
+    int differenceX = (int)(RendererBounds.x_end - RendererBounds.x_start) - pos.x;
+    int differenceY = (int)(RendererBounds.y_end - RendererBounds.y_start) - pos.y;
+
+    if (differenceX < 16) xMax = differenceX;
+    if (differenceY < 16) yMax = differenceY;
+
+    for (int y = 0 ; y < yMax; y++) {
+        for (int x = 0 ; x < yMax; x++) {
+            int bit = y * font->font_size.h + x;
+            int byte = bit / 8;
+            if ((MouseCursor[byte] & (0b10000000 >> (x % 8)))) {
+                if (getPix(pos.x + x, pos.y + y) == MouseCursorBufferAfter[x + y * font->font_size.h])
+                    putPix(pos.x + x, pos.y + y, MouseCursorBuffer[x + y * font->font_size.h]);
+            }
+        }
+    }
+}
+
+void BasicRenderer::drawMouseCursor(uint8_t* MouseCursor, Point pos) {
+    if (!a2r()) return;
+    MouseDrawn = true;
+
+    uint32_t color = findOppColor();
+    int yMax = 16;
+    int xMax = 16;
+    int differenceX = (int)(RendererBounds.x_end - RendererBounds.x_start) - pos.x;
+    int differenceY = (int)(RendererBounds.y_end - RendererBounds.y_start) - pos.y;
+
+    if (differenceX < 16) xMax = differenceX;
+    if (differenceY < 16) yMax = differenceY;
+
+    for (int y = 0 ; y < yMax; y++) {
+        for (int x = 0 ; x < yMax; x++) {
+            int bit = y * 16 + x;
+            int byte = bit / 8;
+            if ((MouseCursor[byte] & (0b10000000 >> (x % 8)))) {
+                MouseCursorBuffer[x + y * font->font_size.h] = getPix(pos.x + x, pos.y + y);
+                putPix(pos.x + x, pos.y + y, color);
+                MouseCursorBufferAfter[x + y * font->font_size.h] = getPix(pos.x + x, pos.y + y);
+            }
+        }
+    }
+}
+
+uint32_t BasicRenderer::findOppColor() {
+    return createRGBA(
+        (
+               Colors_AreEqual(RegionBackgroundColor, WHITE)
+            || Colors_AreEqual(RegionBackgroundColor, YELLOW)
+            || Colors_AreEqual(RegionBackgroundColor, CYAN)
+        ) ? BLACK : WHITE 
+    );
+}

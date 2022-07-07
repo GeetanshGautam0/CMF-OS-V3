@@ -1,5 +1,27 @@
 #include "mouse.h"
 
+#define RS_BUFFER   1
+#define CPR         2
+
+uint8_t MousePointer[] = {
+    (uint8_t)0b11111111, (uint8_t)0b111000000,
+    (uint8_t)0b11111111, (uint8_t)0b10000000,
+    (uint8_t)0b11111110, (uint8_t)0b00000000,
+    (uint8_t)0b11111100, (uint8_t)0b00000000,
+    (uint8_t)0b11111000, (uint8_t)0b00000000,
+    (uint8_t)0b11110000, (uint8_t)0b00000000,
+    (uint8_t)0b11100000, (uint8_t)0b00000000,
+    (uint8_t)0b11000000, (uint8_t)0b00000000,
+    (uint8_t)0b11000000, (uint8_t)0b00000000,
+    (uint8_t)0b10000000, (uint8_t)0b00000000,
+    (uint8_t)0b10000000, (uint8_t)0b00000000,
+    (uint8_t)0b00000000, (uint8_t)0b00000000,
+    (uint8_t)0b00000000, (uint8_t)0b00000000,
+    (uint8_t)0b00000000, (uint8_t)0b00000000,
+    (uint8_t)0b00000000, (uint8_t)0b00000000,
+    (uint8_t)0b00000000, (uint8_t)0b00000000
+};
+
 void MouseWait(){
     uint64_t timeout = 100000;
     while (timeout--){
@@ -28,6 +50,111 @@ void MouseWrite(uint8_t value){
 uint8_t MouseRead(){
     MouseWaitInput();
     return inb(0x60);
+}
+
+uint8_t MouseCycle = 0;
+uint8_t MousePacket[4];
+bool MousePacketReady = false;
+Point MousePosition;
+Point MousePositionOld;
+
+void HandlePS2Mouse(uint8_t data) {
+    switch (MouseCycle) {
+        case 0:
+            if (MousePacketReady) break;
+            if (data & 0b0000100 == 0) break;   // out of sync
+            MousePacket[0] = data;
+            MouseCycle ++;
+            break;
+        case 1:
+            if (MousePacketReady) break;
+            MousePacket[1] = data;
+            MouseCycle ++;
+            break;
+        case 2:
+            if (MousePacketReady) break;
+            MousePacket[2] = data;
+            MousePacketReady = true;
+            MouseCycle = 0;
+            break;
+    }
+}
+
+void ProcessMousePacket() {
+    if (!MousePacketReady) return;
+
+    bool xNegative, yNegative, xOverflow, yOverflow;
+
+    if (MousePacket[0] & PS2XSign){
+        xNegative = true;
+    }else xNegative = false;
+
+    if (MousePacket[0] & PS2YSign){
+        yNegative = true;
+    }else yNegative = false;
+
+    if (MousePacket[0] & PS2XOverflow){
+        xOverflow = true;
+    }else xOverflow = false;
+
+    if (MousePacket[0] & PS2YOverflow){
+        yOverflow = true;
+    }else yOverflow = false;
+
+    if (!xNegative){
+        MousePosition.x += MousePacket[1];
+        if (xOverflow){
+            MousePosition.x += 255;
+        }
+    } else
+    {
+        MousePacket[1] = 256 - MousePacket[1];
+        MousePosition.x -= MousePacket[1];
+        if (xOverflow){
+            MousePosition.x -= 255;
+        }
+    }
+
+    if (!yNegative){
+        MousePosition.y -= MousePacket[2];
+        if (yOverflow){
+            MousePosition.y -= 255;
+        }
+    } else
+    {
+        MousePacket[2] = 256 - MousePacket[2];
+        MousePosition.y += MousePacket[2];
+        if (yOverflow){
+            MousePosition.y += 255;
+        }
+    }
+
+    Region regionSize = KernelRenderer.GetBounds();
+
+    if (MousePosition.x < regionSize.x_start + RS_BUFFER) MousePosition.x = regionSize.x_start + RS_BUFFER;
+    if (MousePosition.x > regionSize.x_end - RS_BUFFER) MousePosition.x = regionSize.x_end - RS_BUFFER;
+    
+    if (MousePosition.y < regionSize.y_start + RS_BUFFER) MousePosition.y = regionSize.y_start + RS_BUFFER;
+    if (MousePosition.y > regionSize.y_end - RS_BUFFER) MousePosition.x = regionSize.y_end - RS_BUFFER;
+
+    KernelRenderer.clearMouseCursor(MousePointer, MousePositionOld);
+    KernelRenderer.drawMouseCursor(MousePointer, MousePosition);
+
+    if (MousePacket[0] & PS2Left){
+        KernelRenderer.drawFShape({RECT, {(unsigned int)(MousePosition.x - CPR), (unsigned int)(MousePosition.x + CPR), (unsigned int)(MousePosition.y - CPR), (unsigned int)(MousePosition.y + CPR)}, 0}, BLACK, BLACK);
+        // KernelRenderer.putChar('a', MousePosition.x, MousePosition.y, BLACK, {true, WHITE}, false);
+    }
+    if (MousePacket[0] & PS2Middle){
+        KernelRenderer.drawFShape({RECT, {(unsigned int)(MousePosition.x - CPR), (unsigned int)(MousePosition.x + CPR), (unsigned int)(MousePosition.y - CPR), (unsigned int)(MousePosition.y + CPR)}, 0}, GREEN, GREEN);
+        // KernelRenderer.putChar('a', MousePosition.x, MousePosition.y, GREEN, {true, WHITE}, false);
+    }
+    if (MousePacket[0] & PS2Right){
+        KernelRenderer.drawFShape({RECT, {(unsigned int)(MousePosition.x - CPR), (unsigned int)(MousePosition.x + CPR), (unsigned int)(MousePosition.y - CPR), (unsigned int)(MousePosition.y + CPR)}, 0}, RED, RED);
+        // KernelRenderer.putChar('a', MousePosition.x, MousePosition.y, RED, {true, WHITE}, false);
+    }
+
+    MousePacketReady = false;
+    MousePositionOld = MousePosition;
 }
 
 void InitPS2Mouse() {

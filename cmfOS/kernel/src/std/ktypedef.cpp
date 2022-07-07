@@ -8,3 +8,7 @@ unsigned long createRGBA(Color color) {
 unsigned long createRGBA(unsigned long color) { return color; }
 
 unsigned int createRGBA(unsigned int color) { return color; }
+
+bool Colors_AreEqual(Color one, Color two) {
+    return ((one.R == two.R) && (one.G == two.G) && (one.B == two.B) && (one.A == two.A));
+}
