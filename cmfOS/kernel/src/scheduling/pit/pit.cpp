@@ -1,0 +1,56 @@
+#include "pit.h"
+#include "../../IO.h"
+
+namespace PIT{
+    double TimeSinceBoot = 0;
+    uint16_t Divisor = 65535;
+    double blinkerMillis = .250;
+    double KBlink = 0;
+    bool KBlinkEnb = false;
+
+    uint16_t GetDivisor() { return Divisor; }
+
+    void Sleepd(double seconds){
+        double startTime = TimeSinceBoot;
+        while (TimeSinceBoot < startTime + seconds){
+            asm("hlt");
+        }
+    }
+
+    void Sleep(uint64_t milliseconds){
+        Sleepd((double)milliseconds / 1000);
+    }
+
+    void SetDivisor(uint16_t divisor){
+        if (divisor < 100) divisor = 100;
+        Divisor = divisor;
+        outb(0x40, (uint8_t)(divisor & 0x00ff));
+        io_wait();
+        outb(0x40, (uint8_t)((divisor & 0xff00) >> 8));
+    }
+
+    uint64_t GetFrequency(){
+        return BaseFrequency / Divisor;
+    }
+
+    void SetFrequency(uint64_t frequency){
+        SetDivisor(BaseFrequency / frequency);
+    }
+
+    void Tick(){
+        TimeSinceBoot += 1 / (double)GetFrequency();
+        if (KBlinkEnb && KBlink <= (TimeSinceBoot - blinkerMillis)) {
+            KBlink = TimeSinceBoot;
+            // KernelRenderer.CursorPosBlinker();
+        } else {
+            // FooterRenderer.SetCursorPos(0, 0);
+            // FooterRenderer.print(to_string(KBlinkEnb), Color::RED);
+            // FooterRenderer.print(to_string(TimeSinceBoot), Color::WHITE);
+            // FooterRenderer.print(to_string(TimeSinceBoot - blinkerMillis), Color::RED);
+            // FooterRenderer.print(to_string(KBlink <= (TimeSinceBoot - blinkerMillis)), Color::WHITE);
+            // FooterRenderer.print(to_string(KBlink), Color::RED);
+        }
+    }
+
+    void EnableKBlink() { KBlinkEnb = true; }
+}
