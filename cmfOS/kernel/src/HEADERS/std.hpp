@@ -1,4 +1,5 @@
 #pragma once
+// #include "efi_memory.hpp"
 
 #ifndef _STD_HPP
 
@@ -38,8 +39,8 @@
             FrameBuffer* frameBuffer;
             PSF1_FONT* psf1_font;
             void* mMap;
-            void* Size;
-            void* mMapDescriptorSize;
+            uint64_t mMapSize;
+            uint64_t mMapDescriptorSize;
             void* rsdp;
         };
         

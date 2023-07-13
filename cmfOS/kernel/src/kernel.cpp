@@ -1,7 +1,8 @@
 #include "HEADERS/std.hpp"
 
 
-void _start(KERNEL::BootInfo* bootInfo){
+void _start(KERNEL::BootInfo* bootInfo)
+{
     unsigned int y = 50;
     unsigned int BBP = 4;
 
@@ -12,5 +13,5 @@ void _start(KERNEL::BootInfo* bootInfo){
         *(unsigned int*)(x + (y * framebuffer->PixelsPerScanLine * BBP) + framebuffer->BaseAddress) = 0xff00ffff;
     }
 
-    return ;
+    return;
 }
