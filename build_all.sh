@@ -7,6 +7,5 @@ cd ../kernel
 rm -r ./lib
 make kernel
 make buildimg
-
 chmod +x run.sh
 ./run.sh
