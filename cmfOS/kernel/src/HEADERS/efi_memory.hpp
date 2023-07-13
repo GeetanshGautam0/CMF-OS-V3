@@ -1,6 +1,5 @@
 #pragma once
-#include "stdint.h"
-#include "stddef.h"
+#include "std.hpp"
 
 
 #ifndef _EFI_MEMORY_HPP
