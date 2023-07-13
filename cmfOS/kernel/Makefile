@@ -32,15 +32,15 @@ $(OBJDIR)/interrupts/interrupts.o: $(SRCDIR)/interrupts/interrupts.cpp
 	@mkdir -p $(@D)
 	$(CC) -mno-red-zone -mgeneral-regs-only -ffreestanding -c $^ -o $@
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	@echo !--- Compiling "$^" ---!
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $^ -o $@
-
 $(OBJDIR)/%_asm.o: $(SRCDIR)/%.asm
 	@echo !--- Compiling ASM "$^" ---!
 	@mkdir -p $(@D)
 	$(ASMC) $(ASMFLAGS) $^ -f elf64 -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@echo !--- Compiling "$^" ---!
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $^ -o $@
 
 link:
 	@echo !--- Linking ---!
