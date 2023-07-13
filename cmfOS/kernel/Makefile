@@ -19,9 +19,11 @@ BOOTEFI := $(GNUEFI)/x86_64/bootloader/main.efi
 
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
+CSRC = $(call rwildcard,$(SRCDIR),*.c) 
 SRC = $(call rwildcard,$(SRCDIR),*.cpp)
 ASMSRC = $(call rwildcard,$(SRCDIR),*.asm)
 OBJS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRC))
+OBJS += $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(CSRC))
 OBJS += $(patsubst $(SRCDIR)/%.asm, $(OBJDIR)/%_asm.o, $(ASMSRC))
 DIRS = $(wildcard $(SRCDIR)/*)
 
@@ -38,6 +40,11 @@ $(OBJDIR)/%_asm.o: $(SRCDIR)/%.asm
 	$(ASMC) $(ASMFLAGS) $^ -f elf64 -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@echo !--- Compiling "$^" ---!
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $^ -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo !--- Compiling "$^" ---!
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $^ -o $@
