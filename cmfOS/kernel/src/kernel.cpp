@@ -1,65 +1,45 @@
-#include "kernelUtil.h"
+#include "HEADERS/std.hpp"
+#include "HEADERS/ktypedef.hpp"
+#include "KERNEL_UTIL/kernel_util.hpp"
 
 
-namespace __Kernel {
+namespace KernelMain {
 
-    #define __KernelDef 
+    KERNEL::KernelInfo 
+    _on_boot(KERNEL::BootInfo* boot_info) 
+    {
+        KERNEL::KernelInfo kernel_info;  
 
-    void _on_start(Boot::BootInfo* bootInfo, KernelInfo kernelInfo) {
-        #ifndef __KernelInit 
-            return;
+        #if defined(_KERNEL_UTIL_HPP)
+            return InitKernel(boot_info);
+        #else
+            return kernel_info;
         #endif
 
-        PageTableManager::PageTableManager* PTM = kernelInfo.pageTableManager;
-        PIT::SetDivisor(65535); 
-        PCI::EnumeratePCI(kernelInfo.mcfg);    
-        KeyboardDebugMode = KB_DEBUG_MODE::NONE;
     }
 
-    void _setup_prompts(BasicRenderer::Renderer* br_ptr, FrameBuffer::FrameBuffer* fb, Font::PSF1_FONT* font) {
-        PromptConfig::completeSetup(br_ptr, fb, font);
-    }
+    void 
+    _main(KERNEL::KernelInfo kernel_info, KERNEL::BootInfo* boot_info) 
+    {
+        unsigned int y = 50;
+        unsigned int BBP = 4;
 
-    void _main(BasicRenderer::Renderer* br, Boot::BootInfo* bootInfo) {
-        bool alt_state = true;
-        uint32_t y = (uint32_t)(br->RendererBounds().yf - bootInfo->psf1_font->font_size.h);
+        KERNEL::FrameBuffer* framebuffer = boot_info->frameBuffer;
+        KERNEL::SimpleFont::PSF1_FONT* psf1_font = boot_info->psf1_font;
 
-        while (true) {
-            br->SetCursorPosition({0, y});
-            br->printString("__Kernel::_main() ", alt_state ? Color::GREEN : Color::BLUE);
-            br->printString(dr.gen_key(rand()), Color::BLACK); 
-            alt_state != alt_state;
-            
-            PIT::Sleep(100);
+        for (unsigned int x = 0; x < framebuffer->Width /2 * BBP; x += BBP) {
+            *(unsigned int*)(x + (y * framebuffer->PixelsPerScanLine * BBP) + framebuffer->BaseAddress) = 0xff00ffff;
         }
     }
 
 }
 
-extern "C" void _start(Boot::BootInfo* bootInfo) {        
-    KernelInfo kernelInfo = InitKernel(bootInfo);
-    __Kernel::_on_start(bootInfo, kernelInfo);
-    BasicRenderer::Renderer br(bootInfo->frameBuffer, bootInfo->psf1_font, {0, 0, bootInfo->frameBuffer->Width, bootInfo->frameBuffer->Height}, Color::WHITE);
-    __Kernel::_setup_prompts(&br, bootInfo->frameBuffer, bootInfo->psf1_font);
 
-    dr.rfRgn();
+extern "C" void 
+_start(KERNEL::BootInfo * boot_info)
+{
+    KERNEL::KernelInfo kernel_info = KernelMain::_on_boot(boot_info);
+    KernelMain::_main(kernel_info, boot_info);
 
-    for (uint32_t i = 0; i < NRegions; i++) {
-        if (dr.Regions[i]._occ) {
-            br.printString("\n\rRegionDefinition ", Color::BLACK);
-            
-            br.printString(to_string((uint64_t)i), Color::BLACK);
-            br.printString(":\n\r\t* Region: {", Color::BLACK);
-            
-            br.printString(to_string((uint64_t)dr.Regions[i].region.x0), Color::RED);       br.printString(", ", Color::BLACK);
-            br.printString(to_string((uint64_t)dr.Regions[i].region.y0), Color::GREEN);     br.printString(", ", Color::BLACK);
-            br.printString(to_string((uint64_t)dr.Regions[i].region.xf), Color::RED);       br.printString(", ", Color::BLACK);
-            br.printString(to_string((uint64_t)dr.Regions[i].region.yf), Color::GREEN);     
-            br.printString("}\n\r\t* Key: ", Color::BLACK);
-            br.printString(dr.Regions[i].key, Color::RED);
-        }
-    }
-
-    __Kernel::_main(&br, bootInfo);
-
+    return;
 }
