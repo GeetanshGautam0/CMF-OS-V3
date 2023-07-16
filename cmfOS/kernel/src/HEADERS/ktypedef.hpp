@@ -17,7 +17,8 @@
     #ifndef __COLOR
         #define __COLOR
 
-        namespace VGA_COLOR {
+        namespace COLOR {
+            
             struct Color {
                 unsigned char R;
                 unsigned char G;
